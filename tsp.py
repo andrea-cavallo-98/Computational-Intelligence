@@ -9,8 +9,53 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-NUM_CITIES = 23
-STEADY_STATE = 1000
+NUM_CITIES = 30
+STEADY_STATE = 100
+GENOME_LENGTH = NUM_CITIES
+POPULATION_SIZE = 20
+OFFSPRING_SIZE = 50
+TOURNAMEN_SIZE = 2
+MUTATION_PROBABILITY = 1 / GENOME_LENGTH
+
+def parent_selection(problem, population):
+    tournament = population[np.random.randint(0, len(population), size=(TOURNAMEN_SIZE,))]
+    fitness = np.array([problem.evaluate_solution(t) for t in tournament])
+    return np.copy(tournament[fitness.argmin()])
+
+def xover(parent1, parent2): # cycle crossover
+    offspring = np.zeros(parent1.shape)
+    i = np.random.randint(0, GENOME_LENGTH)
+    j = np.random.randint(0, GENOME_LENGTH + 1)
+    while j <= i:
+        j = np.random.randint(0, GENOME_LENGTH + 1)
+    offspring[i:j] = parent2[i:j]
+    c = 0
+    for n in parent1:
+        if c == i:
+            c = j
+        if n not in offspring:
+            offspring[c] = n
+            c += 1
+    return offspring
+
+
+def mutate(parent):
+    offspring = np.copy(parent)
+    while np.random.random() < MUTATION_PROBABILITY:
+        if np.random.random() < 0.5: #swap mutation
+            i = np.random.randint(0, GENOME_LENGTH)
+            j = np.random.randint(0, GENOME_LENGTH)
+            while j == i:
+                j = np.random.randint(0, GENOME_LENGTH)
+            offspring[i], offspring[j] = parent[j], parent[i]
+        else: #inversion mutation
+            i = np.random.randint(1, GENOME_LENGTH-1)
+            j = np.random.randint(0, GENOME_LENGTH)
+            while j <= i:
+                j = np.random.randint(0, GENOME_LENGTH)
+            offspring[i:j] = parent[j-1:i-1:-1]
+    return offspring
+
 
 
 class Tsp:
@@ -49,7 +94,7 @@ class Tsp:
                 with_labels=True,
                 node_color='pink')
         if path is not None:
-            plt.title(f"Current path: {self.evaluate_solution(path):,}")
+            print(f"Current path: {self.evaluate_solution(path):,}")
         plt.show()
 
     @property
@@ -73,27 +118,39 @@ def tweak(solution: np.array, *, pm: float = .1) -> np.array:
 def main():
 
     problem = Tsp(NUM_CITIES)
-
+    # initial random solution
     solution = np.array(range(NUM_CITIES))
     np.random.shuffle(solution)
-    solution_cost = problem.evaluate_solution(solution)
     problem.plot(solution)
+    best_fitness = problem.evaluate_solution(solution)
 
-    history = [(0, solution_cost)]
+    # initial population
+    population = np.array(np.zeros((POPULATION_SIZE, GENOME_LENGTH)))
+    population[0, :] = solution
+    for i in range(1, POPULATION_SIZE):
+        population[i, :] = np.array(range(NUM_CITIES))
+        np.random.shuffle(population[i,:])
+
+    generations = 1
     steady_state = 0
-    step = 0
     while steady_state < STEADY_STATE:
-        step += 1
-        steady_state += 1
-        new_solution = tweak(solution, pm=.5)
-        new_solution_cost = problem.evaluate_solution(new_solution)
-        if new_solution_cost < solution_cost:
-            solution = new_solution
-            solution_cost = new_solution_cost
-            history.append((step, solution_cost))
+        generations += 1
+        offspring = list()
+        for _ in range(OFFSPRING_SIZE):
+            p1, p2 = parent_selection(problem, population), parent_selection(problem, population)
+            offspring.append(mutate(xover(p1, p2)))
+        offspring = np.array(offspring)
+        fitness = np.array([problem.evaluate_solution(o) for o in offspring])
+        population = np.copy(offspring[fitness.argsort()[:]][:POPULATION_SIZE])
+        new_best_fitness = problem.evaluate_solution(population[0])
+        if best_fitness == new_best_fitness:
+            steady_state += 1
+        else:
             steady_state = 0
-    problem.plot(solution)
+        best_fitness = new_best_fitness
 
+    problem.plot(offspring[fitness.argmin()])
+    print(f"Problem solved in {generations} generations")    
 
 if __name__ == '__main__':
     logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%H:%M:%S')
