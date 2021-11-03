@@ -9,7 +9,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-NUM_CITIES = 30
+NUM_CITIES = 9
 STEADY_STATE = 100
 GENOME_LENGTH = NUM_CITIES
 POPULATION_SIZE = 20
@@ -22,38 +22,67 @@ def parent_selection(problem, population):
     fitness = np.array([problem.evaluate_solution(t) for t in tournament])
     return np.copy(tournament[fitness.argmin()])
 
-def xover(parent1, parent2): # cycle crossover
+def xover(parent1, parent2): 
     offspring = np.zeros(parent1.shape)
-    i = np.random.randint(0, GENOME_LENGTH)
-    j = np.random.randint(0, GENOME_LENGTH + 1)
-    while j <= i:
+    xover_type = np.random.randint(3)
+    if xover_type == 0: # cycle crossover
+        i = np.random.randint(0, GENOME_LENGTH)
         j = np.random.randint(0, GENOME_LENGTH + 1)
-    offspring[i:j] = parent2[i:j]
-    c = 0
-    for n in parent1:
-        if c == i:
-            c = j
-        if n not in offspring:
-            offspring[c] = n
-            c += 1
+        while j <= i:
+            j = np.random.randint(0, GENOME_LENGTH + 1)
+        offspring[i:j] = parent2[i:j]
+        c = 0
+        for n in parent1:
+            if c == i:
+                c = j
+            if n not in offspring:
+                offspring[c] = n
+                c += 1
+    elif xover_type == 1: # partially mapped crossover
+        pass
+    elif xover_type == 2: # inver over
+        i = np.random.randint(0, GENOME_LENGTH)
+        offspring = parent1.copy()
+        c = np.where(parent2 == parent1[i])[0][0]
+        j = np.where(parent1 == parent2[(c+1) % GENOME_LENGTH])[0][0]
+        offspring[(i+1) % GENOME_LENGTH] = parent2[(c+1) % GENOME_LENGTH]
+        if j > i:
+            offspring[i+2:j+1] = parent1[j-1:i:-1]
+        else:
+            offspring[j+2:i+1] = parent1[i-1:j:-1]
     return offspring
 
 
 def mutate(parent):
     offspring = np.copy(parent)
     while np.random.random() < MUTATION_PROBABILITY:
-        if np.random.random() < 0.5: #swap mutation
-            i = np.random.randint(0, GENOME_LENGTH)
-            j = np.random.randint(0, GENOME_LENGTH)
-            while j == i:
+        mutation = np.random.randint(4)
+        if mutation == 0:
+            if np.random.random() < 0.5: #swap mutation
+                i = np.random.randint(0, GENOME_LENGTH)
                 j = np.random.randint(0, GENOME_LENGTH)
-            offspring[i], offspring[j] = parent[j], parent[i]
-        else: #inversion mutation
+                while j == i:
+                    j = np.random.randint(0, GENOME_LENGTH)
+                offspring[i], offspring[j] = parent[j], parent[i]
+        elif mutation == 1: #inversion mutation
             i = np.random.randint(1, GENOME_LENGTH-1)
             j = np.random.randint(0, GENOME_LENGTH)
             while j <= i:
                 j = np.random.randint(0, GENOME_LENGTH)
             offspring[i:j] = parent[j-1:i-1:-1]
+        elif mutation == 2: #scramble mutation
+            i = np.random.randint(1, GENOME_LENGTH-1)
+            j = np.random.randint(0, GENOME_LENGTH)
+            while j <= i:
+                j = np.random.randint(0, GENOME_LENGTH)
+            np.random.shuffle(offspring[i:j])        
+        elif mutation == 3: #insert mutation
+            i = np.random.randint(1, GENOME_LENGTH-1)
+            j = np.random.randint(0, GENOME_LENGTH)
+            while j <= i:
+                j = np.random.randint(0, GENOME_LENGTH)
+            offspring[i+1] = parent[j]
+            offspring[i+2:j+1] = parent[i+1:j]
     return offspring
 
 
@@ -155,4 +184,7 @@ def main():
 if __name__ == '__main__':
     logging.basicConfig(format='[%(asctime)s] %(levelname)s: %(message)s', datefmt='%H:%M:%S')
     logging.getLogger().setLevel(level=logging.INFO)
-    main()
+    #main()
+    p1 = np.array([1,2,3,4,5,6,7,8,9])
+    p2 = np.array([4,6,1,8,2,5,3,9,7])
+    print(xover(p1, p2))
