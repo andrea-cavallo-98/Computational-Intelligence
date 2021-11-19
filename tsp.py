@@ -5,7 +5,7 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 
-NUM_CITIES = 23
+NUM_CITIES = 30
 STEADY_STATE = 200
 GENOME_LENGTH = NUM_CITIES
 POPULATION_SIZE = 20
