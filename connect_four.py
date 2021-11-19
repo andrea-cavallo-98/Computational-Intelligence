@@ -216,56 +216,59 @@ def minimax(position, mask, depth, alpha, beta, player, num_samples):
   return column, value
 
 
-######
-## Play the game (either human vs ai or ai vs ai)
-######
 
-winner = 0
-board = np.zeros((NUM_COLUMNS, COLUMN_HEIGHT), dtype=np.byte)
+if __name__ == "__main__":
+  
+  ######
+  ## Play the game (either human vs ai or ai vs ai)
+  ######
 
-while winner == 0:
+  winner = 0
+  board = np.zeros((NUM_COLUMNS, COLUMN_HEIGHT), dtype=np.byte)
 
+  while winner == 0:
+
+    print_board(board)
+    print()
+    
+    if ai_playing: # ai's turn -> maximizing player
+      position, mask = get_position_mask_bitmap(board, 1)
+      col, _ = minimax(position, mask, depth_ai_1, -1000, 1000, 1, num_samples_ai_1)
+      play(board, col, 1)
+    else: # -> minimizing player
+      if HUMAN_PLAYING: # human's turn
+        print("Insert column where you want to play: ", end='')
+        col = int(input())
+        print()
+      else: # second ai's turn
+        position, mask = get_position_mask_bitmap(board, -1)
+        col, _ = minimax(position, mask, depth_ai_2, -1000, 1000, -1, num_samples_ai_2)
+      play(board, col, -1)
+
+    # check for winners
+    if four_in_a_row(board, 1):
+      winner = 1
+    elif four_in_a_row(board, -1):
+      winner = -1
+
+    # move on to next turn
+    ai_playing = not ai_playing
+
+    if len(valid_moves(board)) == 0: # no winners, it's a draw
+      winner = -2
+
+  # Print final configuration and winner
   print_board(board)
   print()
-  
-  if ai_playing: # ai's turn -> maximizing player
-    position, mask = get_position_mask_bitmap(board, 1)
-    col, _ = minimax(position, mask, depth_ai_1, -1000, 1000, 1, num_samples_ai_1)
-    play(board, col, 1)
-  else: # -> minimizing player
-    if HUMAN_PLAYING: # human's turn
-      print("Insert column where you want to play: ", end='')
-      col = int(input())
-      print()
-    else: # second ai's turn
-      position, mask = get_position_mask_bitmap(board, -1)
-      col, _ = minimax(position, mask, depth_ai_2, -1000, 1000, -1, num_samples_ai_2)
-    play(board, col, -1)
-
-  # check for winners
-  if four_in_a_row(board, 1):
-    winner = 1
-  elif four_in_a_row(board, -1):
-    winner = -1
-
-  # move on to next turn
-  ai_playing = not ai_playing
-
-  if len(valid_moves(board)) == 0: # no winners, it's a draw
-    winner = -2
-
-# Print final configuration and winner
-print_board(board)
-print()
-if winner == 1:
-  if HUMAN_PLAYING:
-    print("Computer wins!")
+  if winner == 1:
+    if HUMAN_PLAYING:
+      print("Computer wins!")
+    else:
+      print("Computer 1 wins!")
+  elif winner == -1:
+    if HUMAN_PLAYING:
+      print("Human wins!")
+    else:
+      print("Computer 2 wins!")
   else:
-    print("Computer 1 wins!")
-elif winner == -1:
-  if HUMAN_PLAYING:
-    print("Human wins!")
-  else:
-    print("Computer 2 wins!")
-else:
-  print("It's a draw!")
+    print("It's a draw!")

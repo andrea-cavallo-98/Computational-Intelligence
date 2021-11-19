@@ -2,11 +2,11 @@
 
 Labs and exercises from the course `Computational Intelligence`
 
-### Traveling Salesman Problem
+## Traveling Salesman Problem
 The file `tsp.py` contains a genetic algorithm for the solution of the traveling salesman problem in Python.
 Different crossover types and mutation types are implemented and experimented.
 
-### Connect-4
+## Connect-4
 The file `connect_four.py` contains an algorithm playing Connect-4. 
 #### Algorithm
 The algorithm consists of a Minimax search with limited depth and alpha-beta pruning. When the depth limit is reached, the value of a node is estimated through a Monte Carlo evaluation (average the results of a specified number of random simulations), and the node with the highest value is selected. 
