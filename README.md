@@ -20,4 +20,8 @@ In particular, the board is represented as a sequence of bits that are then conv
 <!-- end of list -->
 In this way, operations on the board such as checking if a player has won, adding a cell etc. can be performed using bit-wise operations which are very efficient.
 #### Modalities
-The program allows to play agains the algorithm or to have two instances of the algorithm playing agains each other, by setting the appropriate parameters.
+The program allows to play agains the algorithm or to have two instances of the algorithm playing agains each other, by setting the appropriate parameters. For the playing algorithm, it is possible to specify the following parameters:
+* `depth`: depth of the MinMax algorithm
+* `num_samples`: number of simulations performed by the Monte Carlo evaluation to provide the value of a node
+ <!-- end of list -->
+Increasing these values leads to better players, but the time required for each move increases. A reasonable setting (around 10 seconds for the first moves) is `depth = 4` and `num_samples = 100`.
