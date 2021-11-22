@@ -11,12 +11,12 @@ MAX_DEPTH = 6 * 7
 
 # NB: to perform complete minimax search, set depth to MAX_DEPTH
 # to perform Monte Carlo Tree Search, set depth to 1
-HUMAN_PLAYING = False # Set to True to play against ai, set to False to play ai vs ai
-depth_ai_1 = 3 # Depth for minimax search of first ai (must be between 1 and MAX_DEPTH)
+HUMAN_PLAYING = True # Set to True to play against ai, set to False to play ai vs ai
+depth_ai_1 = 4 # Depth for minimax search of first ai (must be between 1 and MAX_DEPTH)
 depth_ai_2 = 4 # Depth for minimax search of second ai (must be between 1 and MAX_DEPTH)
 num_samples_ai_1 = 100 # Number of samples for montecarlo evaluation of first ai 
 num_samples_ai_2 = 100 # Number of samples for montecarlo evaluation of second ai
-ai_playing = True # Set to True if ai has the first move, False otherwise
+ai_playing = False # Set to True if ai has the first move, False otherwise
 
 ######
 ## Basic functions
@@ -103,8 +103,8 @@ def get_position_mask_bitmap(board, player):
         position += '0'
         # Start with bottom row
         for i in range(5, -1, -1):
-            mask += ['0', '1'][board[j, i] != 0]
-            position += ['0', '1'][board[j, i] == player]
+            mask += ['0', '1'][bool(board[j, i] != 0)]
+            position += ['0', '1'][bool(board[j, i] == player)]
     return int(position, 2), int(mask, 2)
 
 
@@ -182,7 +182,7 @@ def minimax(position, mask, depth, alpha, beta, player, num_samples):
   if connected_four(mask ^ position): # previous player has won
 	  return (None, -player * 1)
 	
-  if mask == 0b1111110111111011111101111110111111011111101111110: # no more available moves, it's a draw!
+  if mask == 0b0111111011111101111110111111011111101111110111111: # no more available moves, it's a draw!
 	  return (None, 0)
 
   if depth == 0: # Evaluate node using Monte Carlo evaluation
@@ -216,15 +216,15 @@ def minimax(position, mask, depth, alpha, beta, player, num_samples):
   return column, value
 
 
-
 if __name__ == "__main__":
   
   ######
   ## Play the game (either human vs ai or ai vs ai)
   ######
 
-  winner = 0
+  winner = 0 # 1 if maximizing player wins, -1 if minimizing player wins, -2 if it's a draw
   board = np.zeros((NUM_COLUMNS, COLUMN_HEIGHT), dtype=np.byte)
+  moves = 0 # counter of moves
 
   while winner == 0:
 
@@ -237,9 +237,17 @@ if __name__ == "__main__":
       play(board, col, 1)
     else: # -> minimizing player
       if HUMAN_PLAYING: # human's turn
-        print("Insert column where you want to play: ", end='')
-        col = int(input())
+
+        valid_move = False
+        while not valid_move:
+          print("Insert column where you want to play: ", end='')
+          col = int(input())
+          if col < 0 or col > 6 or col not in valid_moves(board):
+            print("Invalid move!")
+          else:
+            valid_move = True
         print()
+
       else: # second ai's turn
         position, mask = get_position_mask_bitmap(board, -1)
         col, _ = minimax(position, mask, depth_ai_2, -1000, 1000, -1, num_samples_ai_2)
@@ -253,6 +261,7 @@ if __name__ == "__main__":
 
     # move on to next turn
     ai_playing = not ai_playing
+    moves += 1
 
     if len(valid_moves(board)) == 0: # no winners, it's a draw
       winner = -2
