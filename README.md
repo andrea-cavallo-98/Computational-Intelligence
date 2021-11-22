@@ -1,12 +1,30 @@
 # COMPUTATIONAL-INTELLIGENCE
 
-Labs and exercises from the course `Computational Intelligence`
+Labs and exercises from the course `Computational Intelligence`:
+* [Traveling Salesman Problem](#traveling-salesman-problem)
+* [Connect 4](#connect-4)
 
 ## Traveling Salesman Problem
 The file `tsp.py` contains a genetic algorithm for the solution of the traveling salesman problem in Python.
 Different crossover types and mutation types are implemented and experimented.
-
-## Connect-4
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a
+* a 
+## Connect 4
 The file `connect_four.py` contains an algorithm playing Connect-4. 
 #### Algorithm
 The algorithm consists of a Minimax search with limited depth and alpha-beta pruning. Possible moves are represented by a tree, and all nodes of the tree are expanded until a depth limit is reached. Then, the value of a node is estimated through a Monte Carlo evaluation (average the results of a specified number of random simulations starting from that node), and the node with the highest value is selected. Two pruning approaches are also implemented:
@@ -20,7 +38,7 @@ In particular, the board is represented as a sequence of bits that are then conv
 <!-- end of list -->
 In this way, operations on the board such as checking if a player has won, adding a cell etc. can be performed using bit-wise operations which are very efficient.
 #### Modalities
-The program allows to play agains the algorithm or to have two instances of the algorithm playing agains each other, by setting the appropriate parameters. For the playing algorithm, it is possible to specify the following parameters:
+The program allows to play agains the algorithm or to have two instances of the algorithm playing against each other, by setting the appropriate parameters. For the playing algorithm, it is possible to specify the following parameters:
 * `depth`: depth of the MinMax algorithm
 * `num_samples`: number of simulations performed by the Monte Carlo evaluation to provide the value of a node
  <!-- end of list -->
