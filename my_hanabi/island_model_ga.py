@@ -71,8 +71,8 @@ class Population:
 
     def run(self, it):
 
-        if (self.individuals.shape != (self.population_size, self.individual_size)):
-            print(f"### Something's wrong! ### Expected shape: {self.population_size},{self.individual_size} - Real shape: {self.individuals.shape}")
+        #if (self.individuals.shape != (self.population_size, self.individual_size)):
+        #    print(f"### Something's wrong! ### Expected shape: {self.population_size},{self.individual_size} - Real shape: {self.individuals.shape}")
 
         self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o)) for o in self.individuals])
         self.individuals = np.copy(self.individuals[self.fitness.argsort()[:]][:self.population_size])
@@ -89,7 +89,7 @@ class Population:
         #print("--- Perform survival selection")
         self.individuals = np.copy(offspring[self.fitness.argsort()[:]][:self.population_size])
         self.fitness.sort()
-        print(f"--- Island {self.id} --- It {it} --- Fitness: {self.fitness.min()} --- Best: {list(self.individuals[0])}")
+        #print(f"--- Island {self.id} --- It {it} --- Fitness: {self.fitness.min()} --- Best: {list(self.individuals[0])}")
 
 
 class World:
@@ -127,9 +127,9 @@ class World:
         for migrant_group in migrant_groups:
             for individual in migrant_group["individuals"]:
                 migrant = copy.deepcopy(individual)
-                print(f"########## MIGRATION -- initial shape: {self.islands[migrant_group['destination']].individuals.shape}, migrant shape: {migrant.reshape(1,NUM_ACTIONS).shape}")
+                #print(f"########## MIGRATION -- initial shape: {self.islands[migrant_group['destination']].individuals.shape}, migrant shape: {migrant.reshape(1,NUM_ACTIONS).shape}")
                 self.islands[migrant_group["destination"]].individuals = np.concatenate((self.islands[migrant_group["destination"]].individuals, migrant.reshape(1,NUM_ACTIONS)))
-                print(f"########## MIGRATION -- final shape: {self.islands[migrant_group['destination']].individuals.shape}")
+                #print(f"########## MIGRATION -- final shape: {self.islands[migrant_group['destination']].individuals.shape}")
             
     def run_parallel_island(self, island):
         for i in range(self.migration_interval):
