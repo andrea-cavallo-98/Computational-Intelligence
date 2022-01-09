@@ -231,10 +231,10 @@ class Game(object):
                 return (None, GameData.ServerPlayerThunderStrike(self.__getCurrentPlayer().name, card))
             else:
                 #print(self.__getCurrentPlayer().name + ": card played and correctly put on the table")
-                #if card.value == 5:
+                if card.value == 5:
                     #print(card.color + " pile has been filled.")
-                if self.__noteTokens > 0:
-                    self.__noteTokens -= 1
+                    if self.__noteTokens > 0:
+                        self.__noteTokens -= 1
                     #print("Giving 1 free note token.")
                 self.__gameOver, self.__score = self.__checkGameEnded()
                 if self.__gameOver:

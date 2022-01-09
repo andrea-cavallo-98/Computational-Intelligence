@@ -48,7 +48,6 @@ class Card(object):
             for val in self.value:
                 keep_going = False
                 if len(state.tableCards[c]) > val - 1: # card already played
-                    keep_going = True
                     continue
                 # count how many cards with same color have been discarded
                 discarded = {}
@@ -56,11 +55,11 @@ class Card(object):
                     discarded[v] = 0
                 for c in state.discardPile:
                     if c.color == c and c.value < val:
-                        discarded[val] += 1
+                        discarded[c.value] += 1
                 for v in range(1, val):
                     if v == 1 and discarded[v] == 3:
                         keep_going = True
-                    if discarded[v] == 2:
+                    elif discarded[v] == 2:
                         keep_going = True
                 if not keep_going:
                     return False
@@ -72,18 +71,19 @@ class Card(object):
             for val in self.value:
                 keep_going = False
                 if len(state.tableCards[col]) > val - 1: # card already played
-                    keep_going = True
+                    score += 1
+                    continue
                 # count how many cards with same color have been discarded
                 discarded = {}
                 for v in range(1, val):
                     discarded[v] = 0
                 for c in state.discardPile:
                     if c.color == col and c.value < val:
-                        discarded[v] += 1
+                        discarded[c.value] += 1
                 for v in range(1, val):
                     if v == 1 and discarded[v] == 3:
                         keep_going = True
-                    if discarded[v] == 2:
+                    elif discarded[v] == 2:
                         keep_going = True
                 if keep_going:
                     score += 1
@@ -153,6 +153,39 @@ class OtherPlayer(object):
         if [i for i in range(len(cards_copy)) if cards_copy[i].is_playable(state.tableCards)]:
             return 100
         return score
+    
+    
+    def score_unambiguous_hint(self, t, value, positions, state, playable):
+        score = 0.0
+
+        cards_copy = deepcopy(self.cards)
+
+        if t == "color":
+            for p in range(self.n_cards):
+                if p in positions:
+                    cards_copy[p].assign_color(value)
+                else:
+                    if value in cards_copy[p].color:
+                        cards_copy[p].remove_color(value)
+                if p in playable:
+                    score += cards_copy[p].score_playable(state.tableCards)
+                else:
+                    score -= cards_copy[p].score_playable(state.tableCards)
+
+        elif t == "value":
+            for p in range(self.n_cards):
+                if p in positions:
+                    cards_copy[p].assign_value(value)
+                else:
+                    if value in cards_copy[p].value:
+                        cards_copy[p].remove_value(value)
+                if p in playable:
+                    score += cards_copy[p].score_playable(state.tableCards)
+                else:
+                    score -= cards_copy[p].score_playable(state.tableCards)
+
+        return score
+
 
 
 class Player(object):
@@ -169,6 +202,7 @@ class Player(object):
             self.cards.append(Card())
         
         self.other_players = [OtherPlayer(i, num_players) for i in range(num_players) if i != id]
+        self.recent_hints = []
 
     def compute_played_cards(self, state):
         played_cards = self.n_cards + len(state.discardPile) 
@@ -189,36 +223,7 @@ class Player(object):
         val = None
         dest = None
 
-        #strategy = [1, 2, 10, 0, 21, 18, 11, 13]
-
         action, cardOrder, t, val, dest = rules.select_action(self, strategy, state)
-
-        """
-        # Choose action
-        action, cardOrder = rules.play_probably_safe_card_with_lives(self, state, 0.8)
-        if action is None:
-            action, cardOrder = rules.play_probably_safe_card_with_lives(self, state, 0.6)
-            if action is None:
-                if state.usedNoteTokens < 8:
-                    action, t, val, dest = rules.tell_playable_card(self, state)
-                if action is None:
-                    if state.usedNoteTokens < 8:
-                        action, cardOrder = rules.play_if_certain(self, state)
-                    if action is None:
-                        if state.usedNoteTokens > 0:
-                            action, cardOrder = rules.discard_probably_useless(self, state, 0.4)
-                        if action is None:
-                            if state.usedNoteTokens > 0:
-                                action, cardOrder = rules.discard_unidentified_card(self)
-                            if action is None:
-                                if state.usedNoteTokens < 8:
-                                    action, t, val, dest = rules.tell_useless_card(self, state)
-                                if action is None:
-                                    if state.usedNoteTokens < 8:
-                                        action, t, val, dest = rules.tell_random_hint(self, state)
-        if action is None:
-            action, cardOrder = rules.discard_random_card(self, state)
-        """
         played_cards = self.compute_played_cards(state)
 
         # Perform selected action
@@ -250,6 +255,8 @@ class Player(object):
                     break
             action = GameData.ClientHintData(str(self.id), dest, t, val)
 
+        self.recent_hints = []
+
         return action
 
     def receive_hint(self, t, value, positions):
@@ -257,6 +264,7 @@ class Player(object):
             for p in range(self.n_cards):
                 if p in positions:
                     self.cards[p].assign_color(value)
+                    self.recent_hints.append(p)
                 else:
                     self.cards[p].remove_color(value)
 
@@ -264,6 +272,7 @@ class Player(object):
             for p in range(self.n_cards):
                 if p in positions:
                     self.cards[p].assign_value(value)
+                    self.recent_hints.append(p)
                 else:
                     self.cards[p].remove_value(value)
 

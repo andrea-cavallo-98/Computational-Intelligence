@@ -46,36 +46,46 @@ def select_action(self, strategy, state):
         elif rule == 6:
             action, cardOrder = play_probably_safe_card_with_lives(self, state, 0.4)
         elif rule == 7:
-            action, t, val, dest = complete_tell_playable_card(self, state)
+            action, cardOrder = play_recently_hinted(self, state, 0.01, 0)
         elif rule == 8:
-            action, t, val, dest = tell_about_ones(self, state)
+            action, cardOrder = play_recently_hinted(self, state, 0.2, 0)
         elif rule == 9:
-            action, t, val, dest = tell_about_fives(self, state)
+            action, cardOrder = play_recently_hinted(self, state, 0.01, 1)
         elif rule == 10:
-            action, t, val, dest = tell_playable_card(self, state)
+            action, cardOrder = play_recently_hinted(self, state, 0.2, 1)
         elif rule == 11:
-            action, t, val, dest = tell_useless_card(self, state)
+            action, t, val, dest = complete_tell_playable_card(self, state)
         elif rule == 12:
-            action, t, val, dest = tell_most_information(self, state)
+            action, t, val, dest = tell_about_ones(self, state)
         elif rule == 13:
-            action, t, val, dest = tell_random_hint(self, state)
+            action, t, val, dest = tell_about_fives(self, state)
         elif rule == 14:
-            action, t, val, dest = tell_unknown_card(self, state)
+            action, t, val, dest = tell_playable_card(self, state)
         elif rule == 15:
-            action, cardOrder = discard_random_card(self, state)
+            action, t, val, dest = tell_useless_card(self, state)
         elif rule == 16:
-            action, cardOrder = discard_useless_card(self, state)
+            action, t, val, dest = tell_most_information(self, state)
         elif rule == 17:
-            action, cardOrder = discard_highest_known(self, state)
+            action, t, val, dest = tell_random_hint(self, state)
         elif rule == 18:
-            action, cardOrder = discard_unidentified_card(self, state)
+            action, t, val, dest = tell_unknown_card(self, state)
         elif rule == 19:
-            action, cardOrder = discard_probably_useless(self, state, 0.8)
+            action, t, val, dest = tell_unambiguous(self, state)
         elif rule == 20:
-            action, cardOrder = discard_probably_useless(self, state, 0.6)
+            action, cardOrder = discard_random_card(self, state)
         elif rule == 21:
-            action, cardOrder = discard_probably_useless(self, state, 0.4)
+            action, cardOrder = discard_useless_card(self, state)
         elif rule == 22:
+            action, cardOrder = discard_highest_known(self, state)
+        elif rule == 23:
+            action, cardOrder = discard_unidentified_card(self, state)
+        elif rule == 24:
+            action, cardOrder = discard_probably_useless(self, state, 0.8)
+        elif rule == 25:
+            action, cardOrder = discard_probably_useless(self, state, 0.6)
+        elif rule == 26:
+            action, cardOrder = discard_probably_useless(self, state, 0.4)
+        elif rule == 27:
             action = random_hint_discard(self, state)
             if action[0] == "hint":
                 t = action[1]
@@ -110,11 +120,11 @@ def is_useless(color, value, state):
         discarded[v] = 0
     for c in state.discardPile:
         if c.color == color and c.value < value:
-            discarded[v] += 1
+            discarded[c.value] += 1
     for v in range(1, value):
         if v == 1 and discarded[v] == 3:
             return True
-        if discarded[v] == 2:
+        elif discarded[v] == 2:
             return True
     return False         
 
@@ -142,6 +152,21 @@ def play_probably_safe_card_with_lives(self, state, prob):
         return "play", prob_playable_cards.index(max(prob_playable_cards))
     else:
         return None, None
+
+def play_recently_hinted(self, state, prob, lives):
+    if state.usedStormTokens >= 3 - lives or len(self.recent_hints) == 0: 
+        return None, None
+    highest_prob = 0.0
+    best_card = None
+    for h in self.recent_hints: 
+        score = self.cards[h].score_playable(state.tableCards)
+        if score > highest_prob:
+            highest_prob = score
+            best_card = h
+    if highest_prob >= prob:
+        return "play", best_card
+    return None, None
+    
 
 # hint about a partially known playable card
 def complete_tell_playable_card(self, state):
@@ -199,8 +224,8 @@ def tell_about_ones(self, state):
 def tell_about_fives(self, state):
     if state.usedNoteTokens >= 8:
         return None, None, None, None
-    max_ones = 0
-    p_max_ones = ""
+    max_fives = 0
+    p_max_fives = ""
     for p in state.players:
         # find player in local list
         for loc_p in self.other_players:
@@ -209,12 +234,12 @@ def tell_about_fives(self, state):
         available_values = []
         for c in p.hand:
             available_values.append(c.value)
-        ones = available_values.count(5)
-        if ones > max_ones:
-            max_ones = ones
-            p_max_ones = p.name
-    if max_ones != 0:
-        return "hint", "value", 5, p_max_ones
+        fives = available_values.count(5)
+        if fives > max_fives:
+            max_fives = fives
+            p_max_fives = p.name
+    if max_fives != 0:
+        return "hint", "value", 5, p_max_fives
     else:
         return None, None, None, None
 
@@ -244,8 +269,8 @@ def tell_useless_card(self, state):
         for loc_p in self.other_players:
             if str(loc_p.id) == p.name:
                 break
-        if len(p.hand) != len(loc_p.cards):
-            print("Error in Tell Useless: Players: ", len(state.players), " Cards: ", len(loc_p.cards), len(p.hand), " Played cards: ", self.compute_played_cards(state))
+        #if len(p.hand) != len(loc_p.cards):
+        #    print("Error in Tell Useless: Players: ", len(state.players), " Cards: ", len(loc_p.cards), len(p.hand), " Played cards: ", self.compute_played_cards(state))
         for i, c in enumerate(p.hand):
             if is_useless(c.color, c.value, state):
                 if len(loc_p.cards[i].value) != 1:
@@ -328,8 +353,8 @@ def tell_unknown_card(self, state):
             break
     for i, c in enumerate(loc_p.cards):
         #print(len(loc_p.cards), len(p.hand))
-        if len(loc_p.cards) != len(p.hand):
-            print("Error in Tell Unknown: Current player: ", p.name, " Players: ", len(state.players), " Cards: ", len(loc_p.cards), len(p.hand), " Played cards: ", self.compute_played_cards(state))
+        #if len(loc_p.cards) != len(p.hand):
+        #    print("Error in Tell Unknown: Current player: ", p.name, " Players: ", len(state.players), " Cards: ", len(loc_p.cards), len(p.hand), " Played cards: ", self.compute_played_cards(state))
         #    print_state(state)
         #    for c in self.cards:
         #        print(c.value, c.color)
@@ -337,6 +362,36 @@ def tell_unknown_card(self, state):
             return "hint", "value", p.hand[i].value, p.name
         if len(c.color) != 1:
             return "hint", "color", p.hand[i].color, p.name
+    return None, None, None, None
+
+# tell card that maximizes probability of playable cards for a player
+def tell_unambiguous(self, state):
+    if state.usedNoteTokens >= 8:
+        return None, None, None, None
+    best_score = 0.0
+    best_hint = None
+    for p in state.players:
+        for loc_p in self.other_players:
+            if str(loc_p.id) == p.name:
+                break
+        # try color hint
+        available_colors = set([c.color for c in p.hand])
+        for c in available_colors:
+            score = loc_p.score_unambiguous_hint("color", c, [i for i in range(len(p.hand)) if p.hand[i].color == c], 
+                                                    state, [i for i in range(len(p.hand)) if loc_p.cards[i].is_playable(state.tableCards)])
+            if score > best_score:
+                best_score = score
+                best_hint = { "t": "color", "val": c, "dest": p.name }
+        # try value hint
+        available_values = set([c.value for c in p.hand])
+        for v in available_values:
+            score = loc_p.score_unambiguous_hint("value", v, [i for i in range(len(p.hand)) if p.hand[i].value == v], 
+                                                    state, [i for i in range(len(p.hand)) if loc_p.cards[i].is_playable(state.tableCards)])
+            if score > best_score:
+                best_score = score
+                best_hint = { "t": "value", "val": v, "dest": p.name }
+    if best_hint is not None:
+        return "hint", best_hint["t"], best_hint["val"], best_hint["dest"]
     return None, None, None, None
 
 # discard random card
@@ -367,7 +422,7 @@ def discard_highest_known(self, state):
                 highest_i = i
     if highest_i is None:
         return None, None
-    return "discard", i
+    return "discard", highest_i
 
 # discard unidentified card
 def discard_unidentified_card(self, state):

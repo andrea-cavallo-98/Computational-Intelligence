@@ -2,16 +2,16 @@ import logging
 import numpy as np
 from play import evaluate_player
 
-NUM_ACTIONS = 23
+NUM_ACTIONS = 28
 STEADY_STATE = 5
 NO_IMPROVEMENT = 15
 GENOME_LENGTH = NUM_ACTIONS
-POPULATION_SIZE = 10
-OFFSPRING_SIZE = 20
+POPULATION_SIZE = 30
+OFFSPRING_SIZE = 60
 TOURNAMEN_SIZE = 5
 MUTATION_PROBABILITY = 0.1
-EVALUATION_IT = 5
-NUM_GENERATIONS = 150
+EVALUATION_IT = 20
+NUM_GENERATIONS = 100
 
 def parent_selection(population, pop_fitness):
     tournament = np.random.randint(0, len(population), size=(TOURNAMEN_SIZE,))
@@ -24,7 +24,8 @@ def parent_selection(population, pop_fitness):
 
 def xover(parent1, parent2): 
     offspring = np.zeros(parent1.shape) - 1
-    xover_type = np.random.choice([0,1,2]) # randomly select which crossover type to execute
+    #xover_type = np.random.choice([0,1,2]) # randomly select which crossover type to execute
+    xover_type = np.random.choice([0]) # randomly select which crossover type to execute
 
     if xover_type == 0: # cycle crossover
         i = np.random.randint(0, GENOME_LENGTH - 1)
@@ -75,7 +76,8 @@ def mutate(parent):
             new_parent = parent
         else:
             new_parent = offspring.copy()
-        mutation = np.random.choice([0,0,1,2,3]) 
+        #mutation = np.random.choice([0,0,1,2,3]) 
+        mutation = np.random.choice([0]) 
         # randomly choose which type of mutation to perform (more likely
         # to perform easier mutation)
 

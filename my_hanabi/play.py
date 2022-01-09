@@ -24,7 +24,8 @@ def print_state(data):
 def evaluate_player(it, strategy):
     ### Evaluate player
     score = 0
-    for NUM_PLAYERS in range(2, 6):
+    range_players = range(2,6)
+    for NUM_PLAYERS in range_players:
         for _ in range(it):
             game = Game()
             players = []
@@ -67,9 +68,12 @@ def evaluate_player(it, strategy):
                 # Move on to next turn
                 current_player = (current_player + 1) % NUM_PLAYERS
     #print(score / (it * 4))
-    return - score / (it * 4)
+    return - score / (it * len(range_players))
 
 if __name__ == "__main__":
     #print(evaluate_player(100, [6.0, 0.0, 10.0, 7.0, 16.0, 15.0, 8.0, 3.0, 2.0, 4.0, 20.0, 9.0, 5.0, 22.0, 1.0, 21.0, 13.0, 18.0, 12.0, 19.0, 14.0, 11.0, 17.0]))
     #print(evaluate_player(100, [1, 2, 10, 0, 21, 18, 11, 13, 22]))
-    print(evaluate_player(100, [4.0, 10.0, 19.0, 18.0, 12.0, 7.0, 6.0, 21.0, 15.0, 20.0, 17.0, 2.0, 11.0, 3.0, 16.0, 0.0, 22.0, 5.0, 9.0, 8.0, 13.0, 1.0, 14.0]))
+    #print(evaluate_player(100, [4.0, 10.0, 19.0, 18.0, 12.0, 7.0, 6.0, 21.0, 15.0, 20.0, 17.0, 2.0, 11.0, 3.0, 16.0, 0.0, 22.0, 5.0, 9.0, 8.0, 13.0, 1.0, 14.0]))
+    #print(evaluate_player(100, [5.0, 10.0, 12.0, 18.0, 11.0, 22.0, 14.0, 19.0, 3.0, 2.0, 17.0, 20.0, 0.0, 13.0, 6.0, 7.0, 21.0, 4.0, 9.0, 1.0, 15.0, 16.0, 8.0]))
+    #print(evaluate_player(100, [0.0, 5.0, 10.0, 4.0, 3.0, 18.0, 12.0, 15.0, 20.0, 21.0, 8.0, 7.0, 9.0, 16.0, 13.0, 11.0, 2.0, 19.0, 1.0, 14.0, 17.0, 22.0, 6.0]))
+    print(evaluate_player(100, [7,8,9,10,19,27]))
