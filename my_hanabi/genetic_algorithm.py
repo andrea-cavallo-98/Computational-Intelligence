@@ -1,17 +1,9 @@
 import logging
 import numpy as np
 from play import evaluate_player
+from constants import NUM_ACTIONS, GENOME_LENGTH, POPULATION_SIZE, OFFSPRING_SIZE, TOURNAMEN_SIZE, \
+    MUTATION_PROBABILITY, EVALUATION_IT, NUM_GENERATIONS, ELITISM_SIZE
 
-NUM_ACTIONS = 28
-STEADY_STATE = 5
-NO_IMPROVEMENT = 15
-GENOME_LENGTH = NUM_ACTIONS
-POPULATION_SIZE = 30
-OFFSPRING_SIZE = 60
-TOURNAMEN_SIZE = 5
-MUTATION_PROBABILITY = 0.1
-EVALUATION_IT = 20
-NUM_GENERATIONS = 100
 
 def parent_selection(population, pop_fitness):
     tournament = np.random.randint(0, len(population), size=(TOURNAMEN_SIZE,))
@@ -22,10 +14,11 @@ def parent_selection(population, pop_fitness):
         fitness = np.array([pop_fitness[t] for t in tournament])
     return np.copy(population[tournament[fitness.argmin()]])
 
+
 def xover(parent1, parent2): 
     offspring = np.zeros(parent1.shape) - 1
-    #xover_type = np.random.choice([0,1,2]) # randomly select which crossover type to execute
-    xover_type = np.random.choice([0]) # randomly select which crossover type to execute
+    xover_type = np.random.choice([0,1,2]) # randomly select which crossover type to execute
+    #xover_type = np.random.choice([0]) # randomly select which crossover type to execute
 
     if xover_type == 0: # cycle crossover
         i = np.random.randint(0, GENOME_LENGTH - 1)
@@ -76,8 +69,8 @@ def mutate(parent):
             new_parent = parent
         else:
             new_parent = offspring.copy()
-        #mutation = np.random.choice([0,0,1,2,3]) 
-        mutation = np.random.choice([0]) 
+        mutation = np.random.choice([0,0,1,2,3]) 
+        #mutation = np.random.choice([0]) 
         # randomly choose which type of mutation to perform (more likely
         # to perform easier mutation)
 
@@ -111,19 +104,6 @@ def mutate(parent):
             offspring[i+2:j+1] = new_parent[i+1:j]
     return offspring
 
-"""
-def tweak(solution: np.array, *, pm: float = .1) -> np.array:
-    new_solution = solution.copy()
-    p = None
-    while p is None or p < pm:
-        i1 = np.random.randint(0, solution.shape[0])
-        i2 = np.random.randint(0, solution.shape[0])
-        temp = new_solution[i1]
-        new_solution[i1] = new_solution[i2]
-        new_solution[i2] = temp
-        p = np.random.random()
-    return new_solution
-"""
 
 def main():
 
@@ -151,7 +131,9 @@ def main():
         generations += 1
         offspring = list()
         print("--- Generate offspring")
-        for _ in range(OFFSPRING_SIZE):
+        for i in range(ELITISM_SIZE):
+            offspring.append(population[i].copy()) # Copy best ELITISM_SIZE individuals to next generation
+        for _ in range(OFFSPRING_SIZE - ELITISM_SIZE):
             p1, p2 = parent_selection(population, fitness), parent_selection(population, fitness)
             offspring.append(mutate(xover(p1, p2)))
         offspring = np.array(offspring)
@@ -159,8 +141,7 @@ def main():
         fitness = np.array([evaluate_player(EVALUATION_IT, list(o)) for o in offspring])
         print("--- Perform survival selection")
         population = np.copy(offspring[fitness.argsort()[:]][:POPULATION_SIZE])
-        new_best_fitness = evaluate_player(EVALUATION_IT, population[0])
-        best_fitness = new_best_fitness
+        best_fitness = fitness.min()
         if best_fitness < best_fitness_overall:
             best_fitness_overall = best_fitness
             best_individual_so_far = list(population[0])

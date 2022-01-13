@@ -56,38 +56,40 @@ def select_action(self, strategy, state):
         elif rule == 10:
             action, cardOrder = play_recently_hinted(self, state, 0.2, 1)
         elif rule == 11:
-            action, t, val, dest = complete_tell_playable_card(self, state)
+            action, cardOrder = play_most_probable_if_deck_empty(self, state)
         elif rule == 12:
-            action, t, val, dest = tell_about_ones(self, state)
+            action, t, val, dest = complete_tell_playable_card(self, state)
         elif rule == 13:
-            action, t, val, dest = tell_about_fives(self, state)
+            action, t, val, dest = tell_about_ones(self, state)
         elif rule == 14:
-            action, t, val, dest = tell_playable_card(self, state)
+            action, t, val, dest = tell_about_fives(self, state)
         elif rule == 15:
-            action, t, val, dest = tell_useless_card(self, state)
+            action, t, val, dest = tell_playable_card(self, state)
         elif rule == 16:
-            action, t, val, dest = tell_most_information(self, state)
+            action, t, val, dest = tell_useless_card(self, state)
         elif rule == 17:
-            action, t, val, dest = tell_random_hint(self, state)
+            action, t, val, dest = tell_most_information(self, state)
         elif rule == 18:
-            action, t, val, dest = tell_unknown_card(self, state)
+            action, t, val, dest = tell_random_hint(self, state)
         elif rule == 19:
-            action, t, val, dest = tell_unambiguous(self, state)
+            action, t, val, dest = tell_unknown_card(self, state)
         elif rule == 20:
-            action, cardOrder = discard_random_card(self, state)
+            action, t, val, dest = tell_unambiguous(self, state)
         elif rule == 21:
-            action, cardOrder = discard_useless_card(self, state)
+            action, cardOrder = discard_random_card(self, state)
         elif rule == 22:
-            action, cardOrder = discard_highest_known(self, state)
+            action, cardOrder = discard_useless_card(self, state)
         elif rule == 23:
-            action, cardOrder = discard_unidentified_card(self, state)
+            action, cardOrder = discard_highest_known(self, state)
         elif rule == 24:
-            action, cardOrder = discard_probably_useless(self, state, 0.8)
+            action, cardOrder = discard_unidentified_card(self, state)
         elif rule == 25:
-            action, cardOrder = discard_probably_useless(self, state, 0.6)
+            action, cardOrder = discard_probably_useless(self, state, 0.8)
         elif rule == 26:
-            action, cardOrder = discard_probably_useless(self, state, 0.4)
+            action, cardOrder = discard_probably_useless(self, state, 0.6)
         elif rule == 27:
+            action, cardOrder = discard_probably_useless(self, state, 0.4)
+        elif rule == 28:
             action = random_hint_discard(self, state)
             if action[0] == "hint":
                 t = action[1]
@@ -175,6 +177,14 @@ def play_recently_hinted(self, state, prob, lives):
             best_card = h
     if highest_prob >= prob:
         return "play", best_card
+    return None, None
+
+def play_most_probable_if_deck_empty(self, state):
+    if state.usedStormTokens >= 2:
+        return None, None
+    if self.compute_played_cards(state) == 50:
+        prob_playable_cards = [c.score_playable(state.tableCards) for c in self.cards]
+        return "play", prob_playable_cards.index(max(prob_playable_cards))
     return None, None
     
 

@@ -1,26 +1,13 @@
 import copy
-import json
-import math
 import multiprocessing
 import os
+import shutil
 
 import numpy as np
-from tqdm import tqdm
 from play import evaluate_player
 import genetic_algorithm as ga
-
-NUM_ACTIONS = 28
-GENOME_LENGTH = NUM_ACTIONS
-POPULATION_SIZE = 30
-OFFSPRING_SIZE = 60
-TOURNAMEN_SIZE = 5
-MUTATION_PROBABILITY = 0.1
-EVALUATION_IT = 10
-NUM_GENERATIONS = 200
-NUM_ISLANDS = 8
-MIGRATION_INTERVAL = 10 
-MIGRATION_SIZE = 5
-
+from constants import ELITISM_SIZE, NUM_ACTIONS, GENOME_LENGTH, POPULATION_SIZE, OFFSPRING_SIZE, EVALUATION_TYPE, \
+    MUTATION_PROBABILITY, EVALUATION_IT, NUM_GENERATIONS, NUM_ISLANDS, MIGRATION_INTERVAL, MIGRATION_SIZE
 
 class Population:
     def __init__(self, population_size, individual_size, mutation_rate, fitness_function, id):
@@ -38,7 +25,7 @@ class Population:
             self.individuals[i, :] = np.array(range(self.individual_size))
             np.random.shuffle(self.individuals[i,:])
 
-        self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o)) for o in self.individuals])
+        self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o), EVALUATION_TYPE) for o in self.individuals])
 
 
     def get_best(self):
@@ -70,19 +57,18 @@ class Population:
         #if (self.individuals.shape != (self.population_size, self.individual_size)):
         #    print(f"### Something's wrong! ### Expected shape: {self.population_size},{self.individual_size} - Real shape: {self.individuals.shape}")
 
-        self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o)) for o in self.individuals])
+        self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o), EVALUATION_TYPE) for o in self.individuals])
         self.individuals = np.copy(self.individuals[self.fitness.argsort()[:]][:self.population_size])
         self.fitness.sort()
 
         offspring = list()
-        #print("--- Generate offspring")
-        for _ in range(OFFSPRING_SIZE):
+        for i in range(ELITISM_SIZE):
+            offspring.append(self.individuals[i].copy()) # Copy best ELITISM_SIZE individuals to next generation
+        for _ in range(OFFSPRING_SIZE - ELITISM_SIZE):
             p1, p2 = self.parent_selection(), self.parent_selection()
             offspring.append(self.mutate(self.crossover(p1, p2)))
         offspring = np.array(offspring)
-        #print("--- Evaluate offspring")
-        self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o)) for o in offspring])
-        #print("--- Perform survival selection")
+        self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o), EVALUATION_TYPE) for o in offspring])
         self.individuals = np.copy(offspring[self.fitness.argsort()[:]][:self.population_size])
         self.fitness.sort()
         f.write(f"{self.id}, {it}, {self.fitness.min()}, {list(self.individuals[0])}")
@@ -110,6 +96,8 @@ class World:
         assert population_size > 0
         assert individual_size > 0
 
+        self.results_dir = "./results/"
+        self.log_files = ["log_" + str(i) + ".csv" for i in range(self.population_size)]
         self.islands = [Population(population_size, individual_size, mutation_rate, fitness_function, id) for id in range(world_size)]
 
     def migrate(self):
@@ -124,54 +112,56 @@ class World:
         for migrant_group in migrant_groups:
             for individual in migrant_group["individuals"]:
                 migrant = copy.deepcopy(individual)
-                #print(f"########## MIGRATION -- initial shape: {self.islands[migrant_group['destination']].individuals.shape}, migrant shape: {migrant.reshape(1,NUM_ACTIONS).shape}")
-                self.islands[migrant_group["destination"]].individuals = np.concatenate((self.islands[migrant_group["destination"]].individuals, migrant.reshape(1,NUM_ACTIONS)))
-                #print(f"########## MIGRATION -- final shape: {self.islands[migrant_group['destination']].individuals.shape}")
-            
+                self.islands[migrant_group["destination"]].individuals = \
+                    np.concatenate((self.islands[migrant_group["destination"]].individuals, migrant.reshape(1,NUM_ACTIONS)))
+                
     def run_parallel_island(self, island):
-        for i in range(self.migration_interval):
-            island.run(i, f)
+        with open(self.results_dir + "log_" + str(island.id) + ".csv", "a") as f:
+            for i in range(self.migration_interval):
+                island.run(i, f)
         return island
 
-    def run_parallel(self, generations, name):
+    def run_parallel(self, generations):
         assert self.world_size > 1
         assert self.migration_interval > 0
         assert self.migration_size > 0
 
-        splits = generations // self.migration_interval
-        status = tqdm(range(splits))
-        best_individual = None
-        best_score = 0
+        ## Create results directory to store output results
+        if os.path.exists(self.results_dir):
+            shutil.rmtree(self.results_dir)
+        os.makedirs(self.results_dir)
+        
+        with open(self.results_dir + "log_main.txt") as f:
 
-        log_file = "log.csv"
+            splits = generations // self.migration_interval
+            best_individual = None
+            best_score = 0
 
-        for split in status:
-            with multiprocessing.Pool() as pool:
-                self.islands = pool.map(self.run_parallel_island, self.islands)
+            for split in range(splits):
+                with multiprocessing.Pool() as pool:
+                    self.islands = pool.map(self.run_parallel_island, self.islands)
 
-            for island in self.islands:
-                if island.get_best()[1] < best_score:
-                    best_individual, best_score = island.get_best()
+                for island in self.islands:
+                    if island.get_best()[1] < best_score:
+                        best_individual, best_score = island.get_best()
 
-            status.set_description("score: {}".format(best_score))
+                f.write({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
+                print({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
 
-            #f.write({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
-            print({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
+                self.migrate()
 
-            self.migrate()
-
-        print("Generations limit reached.")
+            print("Generations limit reached.")
 
 
 if __name__ == "__main__":
     
     world = World(
-        NUM_ISLANDS,
-        POPULATION_SIZE,
-        NUM_ACTIONS,
-        MUTATION_PROBABILITY,
-        MIGRATION_INTERVAL,
-        MIGRATION_SIZE,
-        evaluate_player
+        world_size=NUM_ISLANDS,
+        population_size=POPULATION_SIZE,
+        individual_size=GENOME_LENGTH,
+        mutation_rate=MUTATION_PROBABILITY,
+        migration_interval=MIGRATION_INTERVAL,
+        migration_size=MIGRATION_SIZE,
+        fitness_function=evaluate_player
     )
-    world.run_parallel(NUM_GENERATIONS, None)
+    world.run_parallel(NUM_GENERATIONS)
