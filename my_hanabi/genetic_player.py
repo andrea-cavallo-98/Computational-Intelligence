@@ -46,7 +46,6 @@ class Card(object):
     def is_useless(self, state):
         for c in self.color:
             for val in self.value:
-                keep_going = False
                 if len(state.tableCards[c]) > val - 1: # card already played
                     continue
                 # count how many cards with same color have been discarded
@@ -58,18 +57,16 @@ class Card(object):
                         discarded[c.value] += 1
                 for v in range(1, val):
                     if v == 1 and discarded[v] == 3:
-                        keep_going = True
+                        continue
                     elif discarded[v] == 2:
-                        keep_going = True
-                if not keep_going:
-                    return False
+                        continue
+                return False
         return True                        
 
     def score_useless(self, state):
         score = 0
         for col in self.color:
             for val in self.value:
-                keep_going = False
                 if len(state.tableCards[col]) > val - 1: # card already played
                     score += 1
                     continue
@@ -82,11 +79,11 @@ class Card(object):
                         discarded[c.value] += 1
                 for v in range(1, val):
                     if v == 1 and discarded[v] == 3:
-                        keep_going = True
+                        score += 1
+                        continue
                     elif discarded[v] == 2:
-                        keep_going = True
-                if keep_going:
-                    score += 1
+                        score += 1
+                        continue
         return score / (len(self.color) * len(self.value))               
 
 
@@ -111,6 +108,7 @@ class OtherPlayer(object):
             self.n_cards -= 1
 
     def receive_hint(self, t, value, positions):
+        #print(f"--- Player {self.id} receiving hint: type {t}, v {value}, positions {positions}")
         if t == "color":
             for p in range(self.n_cards):
                 if p in positions:
@@ -150,7 +148,8 @@ class OtherPlayer(object):
                         score += 1
                         cards_copy[p].remove_value(value)
 
-        if [i for i in range(len(cards_copy)) if cards_copy[i].is_playable(state.tableCards)]:
+        # hint made card playable (which was not known as playable before)
+        if [i for i in range(len(cards_copy)) if cards_copy[i].is_playable(state.tableCards) and not self.cards[i].is_playable(state.tableCards)]:
             return 100
         return score
     
@@ -167,10 +166,12 @@ class OtherPlayer(object):
                 else:
                     if value in cards_copy[p].color:
                         cards_copy[p].remove_color(value)
-                if p in playable:
-                    score += cards_copy[p].score_playable(state.tableCards)
-                else:
-                    score -= cards_copy[p].score_playable(state.tableCards)
+                if not self.cards[p].is_playable(state.tableCards):
+                    # if player already knows card is playable, hint is not useful
+                    if p in playable:
+                        score += cards_copy[p].score_playable(state.tableCards)
+                    else:
+                        score -= cards_copy[p].score_playable(state.tableCards)
 
         elif t == "value":
             for p in range(self.n_cards):
@@ -179,10 +180,13 @@ class OtherPlayer(object):
                 else:
                     if value in cards_copy[p].value:
                         cards_copy[p].remove_value(value)
-                if p in playable:
-                    score += cards_copy[p].score_playable(state.tableCards)
-                else:
-                    score -= cards_copy[p].score_playable(state.tableCards)
+                if not self.cards[p].is_playable(state.tableCards):
+                    # if player already knows card is playable, hint is not useful
+                    if p in playable:
+                        # if player already knows card is playable, hint is not useful
+                        score += cards_copy[p].score_playable(state.tableCards)
+                    else:
+                        score -= cards_copy[p].score_playable(state.tableCards)
 
         return score
 
@@ -251,7 +255,10 @@ class Player(object):
 
             for loc_p in self.other_players:
                 if str(loc_p.id) == dest:
-                    loc_p.receive_hint(t, val, [i for i in range(len(p.hand)) if p.hand[i].value == val])
+                    if t == "value":
+                        loc_p.receive_hint(t, val, [i for i in range(len(p.hand)) if p.hand[i].value == val])
+                    elif t == "color":
+                        loc_p.receive_hint(t, val, [i for i in range(len(p.hand)) if p.hand[i].color == val])
                     break
             action = GameData.ClientHintData(str(self.id), dest, t, val)
 
@@ -294,7 +301,7 @@ class Player(object):
                 self.receive_hint(data.type, data.value, data.positions)
             else:
                 for loc_p in self.other_players:
-                    if str(loc_p.id) == data.sender:
+                    if str(loc_p.id) == data.destination:
                         break
                 loc_p.receive_hint(data.type, data.value, data.positions)
 

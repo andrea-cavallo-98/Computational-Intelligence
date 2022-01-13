@@ -3,26 +3,22 @@ import json
 import math
 import multiprocessing
 import os
-import time
 
 import numpy as np
-import pandas as pd
 from tqdm import tqdm
 from play import evaluate_player
 import genetic_algorithm as ga
 
 NUM_ACTIONS = 28
-STEADY_STATE = 5
-NO_IMPROVEMENT = 15
 GENOME_LENGTH = NUM_ACTIONS
-POPULATION_SIZE = 5
-OFFSPRING_SIZE = 10
+POPULATION_SIZE = 30
+OFFSPRING_SIZE = 60
 TOURNAMEN_SIZE = 5
 MUTATION_PROBABILITY = 0.1
-EVALUATION_IT = 5
-NUM_GENERATIONS = 100
+EVALUATION_IT = 10
+NUM_GENERATIONS = 200
 NUM_ISLANDS = 8
-MIGRATION_INTERVAL = 5 
+MIGRATION_INTERVAL = 10 
 MIGRATION_SIZE = 5
 
 
@@ -69,7 +65,7 @@ class Population:
     def sort(self):
         self.individuals = np.copy(self.individuals[self.fitness.argsort()[:]][:self.population_size])
 
-    def run(self, it):
+    def run(self, it, f):
 
         #if (self.individuals.shape != (self.population_size, self.individual_size)):
         #    print(f"### Something's wrong! ### Expected shape: {self.population_size},{self.individual_size} - Real shape: {self.individuals.shape}")
@@ -89,7 +85,8 @@ class Population:
         #print("--- Perform survival selection")
         self.individuals = np.copy(offspring[self.fitness.argsort()[:]][:self.population_size])
         self.fitness.sort()
-        #print(f"--- Island {self.id} --- It {it} --- Fitness: {self.fitness.min()} --- Best: {list(self.individuals[0])}")
+        f.write(f"{self.id}, {it}, {self.fitness.min()}, {list(self.individuals[0])}")
+        print(f"--- Island {self.id} --- It {it} --- Fitness: {self.fitness.min()} --- Best: {list(self.individuals[0])}")
 
 
 class World:
@@ -133,7 +130,7 @@ class World:
             
     def run_parallel_island(self, island):
         for i in range(self.migration_interval):
-            island.run(i)
+            island.run(i, f)
         return island
 
     def run_parallel(self, generations, name):
@@ -141,12 +138,12 @@ class World:
         assert self.migration_interval > 0
         assert self.migration_size > 0
 
-        log = pd.DataFrame(columns=["generation", "score"])
-
         splits = generations // self.migration_interval
         status = tqdm(range(splits))
         best_individual = None
         best_score = 0
+
+        log_file = "log.csv"
 
         for split in status:
             with multiprocessing.Pool() as pool:
@@ -158,40 +155,13 @@ class World:
 
             status.set_description("score: {}".format(best_score))
 
-            #log = log.append({"generation": split * self.migration_interval, "score": best_individual.score}, ignore_index=True)
-            #log.to_csv(os.path.join("output", name + ".log"), index=False)
-
+            #f.write({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
             print({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
 
             self.migrate()
 
         print("Generations limit reached.")
-        return best_individual
 
-    def run_single_island(self, generations, name):
-        assert self.world_size == 1
-        assert self.migration_interval == 0
-        assert self.migration_size == 0
-
-        log = pd.DataFrame(columns=["generation", "score"])
-
-        status = tqdm(range(generations))
-        best_individual = self.islands[0].individuals[0]
-
-        for generation_idx in status:
-            for island in self.islands:
-                island.run()
-
-                if island.get_best().score > best_individual.score:
-                    best_individual = island.get_best()
-
-            status.set_description("score: {}".format(best_individual.score))
-
-            log = log.append({"generation": generation_idx, "score": best_individual.score}, ignore_index=True)
-            log.to_csv(os.path.join("output", name + ".log"), index=False)
-
-        print("Generations limit reached.")
-        return best_individual
 
 if __name__ == "__main__":
     

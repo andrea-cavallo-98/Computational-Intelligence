@@ -29,6 +29,8 @@ def select_action(self, strategy, state):
     val = None
     dest = None
 
+    #0,10,9,19,11,21, 14,15,16, 24, 4, 25, 5, 26, 6, 27
+
     for rule in strategy:
         #print(rule)
         if rule == 0:
@@ -97,6 +99,14 @@ def select_action(self, strategy, state):
                 action = action[0]
 
         if action is not None:
+            """
+            print()
+            print("---------------------------------")
+            print(f"--- Played rule number {rule} ---")
+            print(f"--- Player {self.id} makes action {action}: cardOrder {cardOrder}, type {t}, val {val}, dest {dest}")
+            print("---------------------------------")
+            print()
+            """
             break
     
     return action, cardOrder, t, val, dest
@@ -178,19 +188,13 @@ def complete_tell_playable_card(self, state):
             if str(loc_p.id) == p.name:
                 break
         # try color hint
-        available_colors = []
-        for c in p.hand:
-            if c.color not in available_colors:
-                available_colors.append(c.color)
+        available_colors = set([c.color for c in p.hand])
         for c in available_colors:
             score = loc_p.score_hint("color", c, [i for i in range(len(p.hand)) if p.hand[i].color == c], state)
             if score == 100: # hint made card playable!
                 return "hint", "color", c, p.name
         # try value hint
-        available_values = []
-        for c in p.hand:
-            if c.value not in available_values:
-                available_values.append(c.value)
+        available_values = set([c.value for c in p.hand])
         for v in available_values:
             score = loc_p.score_hint("value", v, [i for i in range(len(p.hand)) if p.hand[i].value == v], state)
             if score == 100:
@@ -208,9 +212,7 @@ def tell_about_ones(self, state):
         for loc_p in self.other_players:
             if str(loc_p.id) == p.name:
                 break
-        available_values = []
-        for c in p.hand:
-            available_values.append(c.value)
+        available_values = [c.value for c in p.hand]
         ones = available_values.count(1)
         if ones > max_ones:
             max_ones = ones
@@ -231,9 +233,7 @@ def tell_about_fives(self, state):
         for loc_p in self.other_players:
             if str(loc_p.id) == p.name:
                 break
-        available_values = []
-        for c in p.hand:
-            available_values.append(c.value)
+        available_values = [c.value for c in p.hand]
         fives = available_values.count(5)
         if fives > max_fives:
             max_fives = fives
@@ -253,7 +253,7 @@ def tell_playable_card(self, state):
             if str(loc_p.id) == p.name:
                 break
         for i, c in enumerate(p.hand):
-            if is_playable(c.color, c.value, state):
+            if is_playable(c.color, c.value, state) and not loc_p.cards[i].is_playable(state.tableCards):
                 if len(loc_p.cards[i].value) != 1:
                     return "hint", "value", c.value, p.name
                 if len(loc_p.cards[i].color) != 1:
@@ -284,40 +284,28 @@ def tell_most_information(self, state):
     if state.usedNoteTokens >= 8:
         return None, None, None, None
     best_score = 0
-    best_t = ""
-    best_val = None
-    best_dest = 0
+    best_hint = None
     for p in state.players:
         # find player in local list
         for loc_p in self.other_players:
             if str(loc_p.id) == p.name:
                 break
         # try color hint
-        available_colors = []
-        for c in p.hand:
-            if c.color not in available_colors:
-                available_colors.append(c.color)
+        available_colors = set([c.color for c in p.hand])
         for c in available_colors:
             score = loc_p.score_hint("color", c, [i for i in range(len(p.hand)) if p.hand[i].color == c], state)
             if score > best_score:
                 best_score = score
-                best_t = "color"
-                best_val = c
-                best_dest = p.name
+                best_hint = { "t": "color", "val": c, "dest": p.name }
         # try value hint
-        available_values = []
-        for c in p.hand:
-            if c.value not in available_values:
-                available_values.append(c.value)
+        available_values = set([c.value for c in p.hand])
         for v in available_values:
             score = loc_p.score_hint("value", v, [i for i in range(len(p.hand)) if p.hand[i].value == v], state)
             if score > best_score:
                 best_score = score
-                best_t = "value"
-                best_val = v
-                best_dest = p.name
-    if best_val is not None:
-        return "hint", best_t, best_val, best_dest
+                best_hint = { "t": "value", "val": v, "dest": p.name }
+    if best_hint is not None:
+        return "hint", best_hint["t"], best_hint["val"], best_hint["dest"]
     return None, None, None, None
 
 # give random hint 
@@ -328,16 +316,10 @@ def tell_random_hint(self, state):
     t = random.choice(["color", "value"])
 
     if t == "color":
-        available_colors = []
-        for c in p.hand:
-            if c.color not in available_colors:
-                available_colors.append(c.color)
+        available_colors = list(set([c.color for c in p.hand]))
         v = random.choice(available_colors)
     else:    
-        available_values = []
-        for c in p.hand:
-            if c.value not in available_values:
-                available_values.append(c.value)
+        available_values = list(set([c.value for c in p.hand]))
         v = random.choice(available_values)
     
     return "hint", t, v, p.name
@@ -378,7 +360,8 @@ def tell_unambiguous(self, state):
         available_colors = set([c.color for c in p.hand])
         for c in available_colors:
             score = loc_p.score_unambiguous_hint("color", c, [i for i in range(len(p.hand)) if p.hand[i].color == c], 
-                                                    state, [i for i in range(len(p.hand)) if loc_p.cards[i].is_playable(state.tableCards)])
+                                                    state, [i for i in range(len(p.hand)) if is_playable(p.hand[i].color, p.hand[i].value, state)])
+            #print(f"Score for hint color: {c}, player: {p.name} --> score: {score}")
             if score > best_score:
                 best_score = score
                 best_hint = { "t": "color", "val": c, "dest": p.name }
@@ -386,7 +369,8 @@ def tell_unambiguous(self, state):
         available_values = set([c.value for c in p.hand])
         for v in available_values:
             score = loc_p.score_unambiguous_hint("value", v, [i for i in range(len(p.hand)) if p.hand[i].value == v], 
-                                                    state, [i for i in range(len(p.hand)) if loc_p.cards[i].is_playable(state.tableCards)])
+                                                    state, [i for i in range(len(p.hand)) if is_playable(p.hand[i].color, p.hand[i].value, state)])
+            #print(f"Score for hint value: {v}, player: {p.name} --> score: {score}")
             if score > best_score:
                 best_score = score
                 best_hint = { "t": "value", "val": v, "dest": p.name }
