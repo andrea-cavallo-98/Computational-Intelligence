@@ -1,7 +1,6 @@
 from copy import deepcopy
-from random import shuffle
+import random
 import GameData
-import logging
 
 class Card(object):
     def __init__(self, id, value, color) -> None:
@@ -65,22 +64,18 @@ class Game(object):
 
     __MAX_NOTE_TOKENS = 8
     __MAX_STORM_TOKENS = 3
-    __MAX_FIREWORKS = 5
+
+    __cards = [] #cards are the same for everyone
 
     def __init__(self) -> None:
         super().__init__()
         self.__dataActions = {}
-
-
-        self.__cards = [] #cards are the same for everyone
-        self.__cardsInitialized = False
         self.__discardPile = []
-        self.__completedFireworks = 0
-        # Init cards
-        numCards = 0
-        if not self.__cardsInitialized:
-            self.__cardsInitialized = True
-            self.__gameOver = False
+        self.__gameOver = False
+        
+        if(len(self.__cards) == 0):
+            # Init cards
+            numCards = 0
             for _ in range(3):
                 self.__cards.append(Card(numCards, 1, "red"))
                 numCards += 1
@@ -325,8 +320,8 @@ class Game(object):
         self.__currentPlayer += 1
         self.__currentPlayer %= len(self.__players)
 
-    def start(self):
-        shuffle(self.__cardsToDraw)
+    def start(self, seed):
+        random.Random(seed).shuffle(self.__cardsToDraw)
         if len(self.__players) < 2:
             #print("Not enough players!")
             return

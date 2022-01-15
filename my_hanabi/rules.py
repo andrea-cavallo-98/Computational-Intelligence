@@ -29,8 +29,6 @@ def select_action(self, strategy, state):
     val = None
     dest = None
 
-    #0,10,9,19,11,21, 14,15,16, 24, 4, 25, 5, 26, 6, 27
-
     for rule in strategy:
         #print(rule)
         if rule == 0:

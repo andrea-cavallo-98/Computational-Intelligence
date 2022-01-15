@@ -131,7 +131,7 @@ class World:
             shutil.rmtree(self.results_dir)
         os.makedirs(self.results_dir)
         
-        with open(self.results_dir + "log_main.txt") as f:
+        with open(self.results_dir + "log_main.txt", "a") as f:
 
             splits = generations // self.migration_interval
             best_individual = None
@@ -145,8 +145,8 @@ class World:
                     if island.get_best()[1] < best_score:
                         best_individual, best_score = island.get_best()
 
-                f.write({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
-                print({"generation": split * self.migration_interval, "score": best_score, "best individual": best_individual})
+                f.write(f"generation {split * self.migration_interval}, score {best_score}, best individual {best_individual}")
+                print(f"generation {split * self.migration_interval}, score {best_score}, best individual {best_individual}")
 
                 self.migrate()
 
