@@ -108,7 +108,10 @@ def select_action(self, strategy, state):
             print()
             """
             break
-    
+    if action is None:
+        print("+++ ACTION IS NONE +++")
+        print("Strategy: ", strategy)
+        print_state(state)
     return action, cardOrder, t, val, dest
 
 

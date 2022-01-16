@@ -7,23 +7,28 @@ import numpy as np
 from play import evaluate_player
 import genetic_algorithm as ga
 from constants import ELITISM_SIZE, NUM_ACTIONS, GENOME_LENGTH, POPULATION_SIZE, OFFSPRING_SIZE, EVALUATION_TYPE, \
-    MUTATION_PROBABILITY, EVALUATION_IT, NUM_GENERATIONS, NUM_ISLANDS, MIGRATION_INTERVAL, MIGRATION_SIZE
+    MUTATION_PROBABILITY, EVALUATION_IT, NUM_GENERATIONS, NUM_ISLANDS, MIGRATION_INTERVAL, MIGRATION_SIZE, LOAD_CHECKPOINT, \
+        STARTING_SPLIT
 
 class Population:
-    def __init__(self, population_size, individual_size, mutation_rate, fitness_function, id):
+    def __init__(self, population_size, individual_size, mutation_rate, fitness_function, id, checkpoint_dir):
         self.population_size = population_size
         self.individual_size = individual_size
         self.mutation_rate = mutation_rate
         self.fitness_function = fitness_function
         self.id = id
+        self.checkpoint_dir = checkpoint_dir
 
         assert population_size > 0
         assert individual_size > 0
 
-        self.individuals = np.array(np.zeros((self.population_size, self.individual_size)))
-        for i in range(self.population_size):
-            self.individuals[i, :] = np.array(range(self.individual_size))
-            np.random.shuffle(self.individuals[i,:])
+        if LOAD_CHECKPOINT:
+            self.individuals = np.load(self.checkpoint_dir + "ckp" + str(self.id) + ".npy")
+        else:
+            self.individuals = np.array(np.zeros((self.population_size, self.individual_size)))
+            for i in range(self.population_size):
+                self.individuals[i, :] = np.array(range(self.individual_size))
+                np.random.shuffle(self.individuals[i,:])
 
         self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o), EVALUATION_TYPE) for o in self.individuals])
 
@@ -71,7 +76,11 @@ class Population:
         self.fitness = np.array([evaluate_player(EVALUATION_IT, list(o), EVALUATION_TYPE) for o in offspring])
         self.individuals = np.copy(offspring[self.fitness.argsort()[:]][:self.population_size])
         self.fitness.sort()
-        f.write(f"{self.id}, {it}, {self.fitness.min()}, {list(self.individuals[0])}")
+
+        if (it + 1) % 5 == 0:
+            np.save(self.checkpoint_dir + "ckp" + str(self.id), self.individuals)
+
+        f.write(f"{self.id}, {it}, {self.fitness.min()}, {list(self.individuals[0])}\n")
         print(f"--- Island {self.id} --- It {it} --- Fitness: {self.fitness.min()} --- Best: {list(self.individuals[0])}")
 
 
@@ -97,8 +106,9 @@ class World:
         assert individual_size > 0
 
         self.results_dir = "./results/"
+        self.checkpoint_dir = "./checkpoint/"
         self.log_files = ["log_" + str(i) + ".csv" for i in range(self.population_size)]
-        self.islands = [Population(population_size, individual_size, mutation_rate, fitness_function, id) for id in range(world_size)]
+        self.islands = [Population(population_size, individual_size, mutation_rate, fitness_function, id, self.checkpoint_dir) for id in range(world_size)]
 
     def migrate(self):
         migrant_groups = []
@@ -126,10 +136,17 @@ class World:
         assert self.migration_interval > 0
         assert self.migration_size > 0
 
-        ## Create results directory to store output results
-        if os.path.exists(self.results_dir):
-            shutil.rmtree(self.results_dir)
-        os.makedirs(self.results_dir)
+        if not LOAD_CHECKPOINT: # otherwise, folders already exist
+            ## Create results directory to store output results
+            if os.path.exists(self.results_dir):
+                shutil.rmtree(self.results_dir)
+            os.makedirs(self.results_dir)
+
+        if not LOAD_CHECKPOINT: # otherwise, folders already exist
+            ## Create results directory to store checkpoints
+            if os.path.exists(self.checkpoint_dir):
+                shutil.rmtree(self.checkpoint_dir)
+            os.makedirs(self.checkpoint_dir)
         
         with open(self.results_dir + "log_main.txt", "a") as f:
 
@@ -137,7 +154,17 @@ class World:
             best_individual = None
             best_score = 0
 
-            for split in range(splits):
+            if LOAD_CHECKPOINT:
+                for island in self.islands:
+                    if island.get_best()[1] < best_score:
+                        best_individual, best_score = island.get_best()
+
+                f.write(f"generation {STARTING_SPLIT * self.migration_interval}, score {best_score}, best individual {best_individual}\n")
+                print(f"generation {STARTING_SPLIT * self.migration_interval}, score {best_score}, best individual {best_individual}")
+                self.migrate()
+
+
+            for split in range(STARTING_SPLIT, splits):
                 with multiprocessing.Pool() as pool:
                     self.islands = pool.map(self.run_parallel_island, self.islands)
 
@@ -145,8 +172,8 @@ class World:
                     if island.get_best()[1] < best_score:
                         best_individual, best_score = island.get_best()
 
-                f.write(f"generation {split * self.migration_interval}, score {best_score}, best individual {best_individual}")
-                print(f"generation {split * self.migration_interval}, score {best_score}, best individual {best_individual}")
+                f.write(f"generation {split * self.migration_interval}, score {best_score}, best individual {list(best_individual)}\n")
+                print(f"generation {split * self.migration_interval}, score {best_score}, best individual {list(best_individual)}")
 
                 self.migrate()
 
