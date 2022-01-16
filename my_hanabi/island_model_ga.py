@@ -155,12 +155,14 @@ class World:
             best_score = 0
 
             if LOAD_CHECKPOINT:
+                best_score = -17.16
+                best_individual = [1.0, 15.0, 12.0, 22.0, 24.0, 25.0, 21.0, 10.0, 8.0, 7.0, 9.0, 27.0, 5.0, 23.0, 26.0, 20.0, 17.0, 18.0, 14.0, 19.0, 28.0, 3.0, 0.0, 2.0, 6.0, 11.0, 4.0, 13.0, 16.0]
                 for island in self.islands:
                     if island.get_best()[1] < best_score:
                         best_individual, best_score = island.get_best()
 
-                f.write(f"generation {STARTING_SPLIT * self.migration_interval}, score {best_score}, best individual {best_individual}\n")
-                print(f"generation {STARTING_SPLIT * self.migration_interval}, score {best_score}, best individual {best_individual}")
+                f.write(f"generation {(STARTING_SPLIT - 1) * self.migration_interval}, score {best_score}, best individual {best_individual}\n")
+                print(f"generation {(STARTING_SPLIT - 1) * self.migration_interval}, score {best_score}, best individual {best_individual}")
                 self.migrate()
 
 
