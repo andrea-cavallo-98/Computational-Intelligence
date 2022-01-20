@@ -20,6 +20,8 @@ df_1 = pd.read_csv(main_dir + "log_1.csv")
 df_2 = pd.read_csv(main_dir + "log_2.csv")
 df_3 = pd.read_csv(main_dir + "log_3.csv")
 
+### Commento casuale
+
 global_best = []
 save_next = False
 with open(main_dir + "log_main.txt", "r") as f:
