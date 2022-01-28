@@ -6,7 +6,7 @@ Labs and exercises from the course `Computational Intelligence`:
 * [Tic Tac Toe](#tic-tac-toe)
 
 ## Traveling Salesman Problem
-The file `tsp.py` contains a genetic algorithm for the solution of the traveling salesman problem in Python.
+The file [`tsp.py`](tsp.py) contains a genetic algorithm for the solution of the traveling salesman problem in Python.
 #### Algorithm
 The genetic algorithm implemented has the following characteristics:
 * parents are selected with a tournament of size 2 (pick the best among 2 randomly selected individuals)
@@ -16,7 +16,7 @@ The genetic algorithm implemented has the following characteristics:
 * the algorithm is terminated when the best solution is steady for a specified number of generations
 
 ## Connect 4
-The file `connect_four.py` contains an algorithm playing Connect-4. 
+The file [`connect_four.py`](connect_four.py) contains an algorithm playing Connect-4. 
 #### Algorithm
 The algorithm consists of a Minimax search with limited depth and alpha-beta pruning. Possible moves are represented by a tree, and all nodes of the tree are expanded until a depth limit is reached. Then, the value of a node is estimated through a Monte Carlo evaluation (average the results of a specified number of random simulations starting from that node), and the node with the highest value is selected. Two pruning approaches are also implemented:
 * alpha-beta pruning: when the value of a node is surely worse than the value of a previously evaluated node, the expansion of that node is stopped
@@ -36,7 +36,7 @@ The program allows to play agains the algorithm or to have two instances of the 
 Increasing these values leads to better players, but the time required for each move increases. A reasonable setting (around 10 seconds for the first moves) is `depth = 4` and `num_samples = 100`.
 
 ## Tic Tac Toe
-The file `tic_tac_toe.py` contains a reinforcement learning algorithm to play tic tac toe. 
+The file [`tic_tac_toe.py`](tic_tac_toe.py) contains a reinforcement learning algorithm to play tic tac toe. 
 #### Algorithm
 The reinforcement learning agent is trained against a random player. At each training step:
 - the action which brings to the state with the highest value is performed
