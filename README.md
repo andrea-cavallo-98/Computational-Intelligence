@@ -3,6 +3,7 @@
 Labs and exercises from the course `Computational Intelligence`:
 * [Traveling Salesman Problem](#traveling-salesman-problem)
 * [Connect 4](#connect-4)
+* [Tic Tac Toe](#tic-tac-toe)
 
 ## Traveling Salesman Problem
 The file `tsp.py` contains a genetic algorithm for the solution of the traveling salesman problem in Python.
@@ -33,3 +34,10 @@ The program allows to play agains the algorithm or to have two instances of the 
 * `num_samples`: number of simulations performed by the Monte Carlo evaluation to provide the value of a node
  <!-- end of list -->
 Increasing these values leads to better players, but the time required for each move increases. A reasonable setting (around 10 seconds for the first moves) is `depth = 4` and `num_samples = 100`.
+
+## Tic Tac Toe
+The file `tic_tac_toe.py` contains a reinforcement learning algorithm to play tic tac toe. 
+#### Algorithm
+The reinforcement learning agent is trained against a random player. At each training step:
+- the action which brings to the state with the highest value is performed
+- the value of the previous state is updated
