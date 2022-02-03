@@ -4,6 +4,7 @@ Labs and exercises from the course `Computational Intelligence`:
 * [Traveling Salesman Problem](#traveling-salesman-problem)
 * [Connect 4](#connect-4)
 * [Tic Tac Toe](#tic-tac-toe)
+* [Ant Colony Optimization](#ant-colony-optimization)
 
 ## Traveling Salesman Problem
 The file [`tsp.py`](tsp.py) contains a genetic algorithm for the solution of the traveling salesman problem in Python.
@@ -41,3 +42,6 @@ The file [`tic_tac_toe.py`](tic_tac_toe.py) contains a reinforcement learning al
 The reinforcement learning agent is trained against a random player. At each training step:
 - the action which brings to the state with the highest value is performed
 - the value of the previous state is updated
+
+## Ant Colony Optimization
+The file [`ant_colony_optimization.py`](ant_colony_optimization.py) contains an implementation of the ant colony optimization algorithm for the Traveling Salesman Problem. The algorithm is inspired by https://github.com/johnberroa/Ant-Colony-Optimization.
